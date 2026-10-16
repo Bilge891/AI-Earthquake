@@ -34,6 +34,7 @@ st.sidebar.markdown("---")
 st.sidebar.subheader("Konum Bilgisi")
 adres_input = st.sidebar.text_input("Adres / İlçe / Mahalle Girin:", placeholder="Örn: Moda, Kadıköy")
 
+# Varsayılan değerler
 enlem = 40.80
 boylam = 28.50
 events_7d, events_30d, events_90d = 0, 0, 0
@@ -46,12 +47,13 @@ if adres_input:
         enlem = lat_bulunan
         boylam = lng_bulunan
         
+        # Otomatik sismik hafıza ve ortalama derinlik
         events_7d, events_30d, events_90d, derinlik = sismik_hafiza_hesapla(enlem, boylam)
         
+        # En yakın toplanma alanlarını çek
         toplanma_alanlari = toplanma_alanlari_bul(adres_input)
         
         st.sidebar.success(f"Adres Bulundu!\nEnlem: {enlem:.2f}, Boylam: {boylam:.2f}")
-        st.sidebar.info(f"📊 **50 km Çevre Analizi:**\n- Son 7 Gün: {events_7d}\n- Son 30 Gün: {events_30d}\n- Son 90 Gün: {events_90d}\n- Ort. Odak Derinliği: {derinlik} km")
     else:
         st.sidebar.error("Adres bulunamadı, varsayılan konum kullanılıyor.")
 
@@ -121,4 +123,3 @@ if toplanma_alanlari:
         st.markdown(f"**{idx}.** 🌳 {alan}")
 else:
     st.info("Sol menüden bir adres girerek yakındaki güvenli toplanma alanlarını listeleyebilirsiniz.")
-    
