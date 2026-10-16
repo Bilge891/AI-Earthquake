@@ -113,7 +113,7 @@ with col1:
             except Exception as e:
                 st.error(f"Model yüklenirken bir hata oluştu: {e}")
     else:
-        st.info("👈 Sol menüden parametreleri ayarlayıp **'Sismik Riski Hesapla'** butonuna tıklayın.")
+        st.info("Sol menüden parametreleri ayarlayıp **'Sismik Riski Hesapla'** butonuna tıklayın.")
 with col2:
     st.subheader("🗺️ Merkez Üssü Konum Haritası")
     
@@ -125,7 +125,7 @@ with col2:
     st.map(map_df, zoom=7, size=200)
 
 st.markdown("---")
-st.subheader("🚨 Adrese Yakın Acil Durum Toplanma & Park Alanları")
+st.subheader("Adrese Yakın Acil Durum Toplanma & Park Alanları")
 
 if toplanma_alanlari:
     for idx, alan in enumerate(toplanma_alanlari, 1):
