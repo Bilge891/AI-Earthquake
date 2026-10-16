@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import joblib
 import plotly.graph_objects as go
-from utils import adres_koordinata_cevirmeci, sismik_hafiza_hesapla
+from utils import adres_koordinata_cevirmeci, sismik_hafiza_hesapla, toplanma_alanlari_bul
 
 st.set_page_config(
     page_title="Sismik Risk Analiz Paneli",
@@ -28,15 +28,17 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-st.sidebar.title("⚙️ Kontrol Paneli")
+st.sidebar.title("Kontrol Paneli")
 st.sidebar.markdown("---")
 
-st.sidebar.subheader("📍 Konum Bilgisi")
-adres_input = st.sidebar.text_input("Adres / İlçe Girin:", placeholder="Örn: Kadıköy, İstanbul")
+st.sidebar.subheader("Konum Bilgisi")
+adres_input = st.sidebar.text_input("Adres / İlçe / Mahalle Girin:", placeholder="Örn: Moda, Kadıköy")
 
 enlem = 40.80
 boylam = 28.50
 events_7d, events_30d, events_90d = 0, 0, 0
+derinlik = 10.0
+toplanma_alanlari = []
 
 if adres_input:
     lat_bulunan, lng_bulunan = adres_koordinata_cevirmeci(adres_input)
@@ -44,14 +46,14 @@ if adres_input:
         enlem = lat_bulunan
         boylam = lng_bulunan
         
-        events_7d, events_30d, events_90d = sismik_hafiza_hesapla(enlem, boylam)
+        events_7d, events_30d, events_90d, derinlik = sismik_hafiza_hesapla(enlem, boylam)
+        
+        toplanma_alanlari = toplanma_alanlari_bul(adres_input)
         
         st.sidebar.success(f"Adres Bulundu!\nEnlem: {enlem:.2f}, Boylam: {boylam:.2f}")
-        st.sidebar.info(f"📊 **50 km Çevredeki Depremler:**\n- Son 7 Gün: {events_7d}\n- Son 30 Gün: {events_30d}\n- Son 90 Gün: {events_90d}")
+        st.sidebar.info(f"📊 **50 km Çevre Analizi:**\n- Son 7 Gün: {events_7d}\n- Son 30 Gün: {events_30d}\n- Son 90 Gün: {events_90d}\n- Ort. Odak Derinliği: {derinlik} km")
     else:
         st.sidebar.error("Adres bulunamadı, varsayılan konum kullanılıyor.")
-
-derinlik = st.sidebar.number_input("Derinlik (km)", min_value=1.0, max_value=100.0, value=15.0)
 
 st.title("Yapay Zeka Destekli Sismik Risk Tahmin Motoru")
 st.caption("XGBoost Modeli & Fizik Tabanlı Sismik Enerji Birikim Analizi")
@@ -111,3 +113,12 @@ with col2:
 
     st.map(map_df, zoom=7, size=200)
 
+st.markdown("---")
+st.subheader("🚨 Adrese Yakın Acil Durum Toplanma & Park Alanları")
+
+if toplanma_alanlari:
+    for idx, alan in enumerate(toplanma_alanlari, 1):
+        st.markdown(f"**{idx}.** 🌳 {alan}")
+else:
+    st.info("Sol menüden bir adres girerek yakındaki güvenli toplanma alanlarını listeleyebilirsiniz.")
+    
