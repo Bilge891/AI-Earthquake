@@ -91,7 +91,6 @@ with col1:
 
                 olasilik = model.predict_proba(input_df)[0][1]
 
-                # Zaman Ufku Ölçeklemesi (NameError Korumalı)
                 secilen_ufuk = zaman_ufku if 'zaman_ufku' in locals() or 'zaman_ufku' in globals() else "Önümüzdeki 30 Gün"
                 time_factors = {
                     "Önümüzdeki 7 Gün": 7 / 30.0,
@@ -104,10 +103,10 @@ with col1:
 
                 st.metric(label=f"M ≥ 4.0 Deprem Olasılığı ({secilen_ufuk})", value=f"%{yuzde:.1f}")
 
-                if olasilik >= 0.35:
+                if olasilik >= 0.65:
                     st.error("**YÜKSEK SİSMİK RİSK**: Bölgede gerilim birikimi tespit edildi.")
                 else:
-                    st.success("🟢 **DÜŞÜK SİSMİK RİSK**: Normal arka plan hareketliliği gözlemleniyor.")
+                    st.success("**DÜŞÜK SİSMİK RİSK**: Normal arka plan hareketliliği gözlemleniyor.")
 
                 st.info(f"**Seçili Konum:** {enlem}°N, {boylam}°E | **Derinlik:** {derinlik} km")
 
