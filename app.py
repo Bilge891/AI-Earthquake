@@ -2,11 +2,11 @@ import streamlit as st
 import pandas as pd
 import joblib
 import plotly.graph_objects as go
-from utils import adres_koordinata_cevirmeci
+from utils import adres_koordinata_cevirmeci, sismik_hafiza_hesapla
 
 st.set_page_config(
     page_title="Sismik Risk Analiz Paneli",
-    page_icon="🌋",
+    page_icon="",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -31,29 +31,27 @@ st.markdown("""
 st.sidebar.title("⚙️ Kontrol Paneli")
 st.sidebar.markdown("---")
 
-st.sidebar.subheader("Konum Bilgisi")
-
+st.sidebar.subheader("📍 Konum Bilgisi")
 adres_input = st.sidebar.text_input("Adres / İlçe Girin:", placeholder="Örn: Kadıköy, İstanbul")
 
 enlem = 40.80
 boylam = 28.50
+events_7d, events_30d, events_90d = 0, 0, 0
 
 if adres_input:
     lat_bulunan, lng_bulunan = adres_koordinata_cevirmeci(adres_input)
     if lat_bulunan and lng_bulunan:
         enlem = lat_bulunan
         boylam = lng_bulunan
+        
+        events_7d, events_30d, events_90d = sismik_hafiza_hesapla(enlem, boylam)
+        
         st.sidebar.success(f"Adres Bulundu!\nEnlem: {enlem:.2f}, Boylam: {boylam:.2f}")
+        st.sidebar.info(f"📊 **50 km Çevredeki Depremler:**\n- Son 7 Gün: {events_7d}\n- Son 30 Gün: {events_30d}\n- Son 90 Gün: {events_90d}")
     else:
         st.sidebar.error("Adres bulunamadı, varsayılan konum kullanılıyor.")
 
 derinlik = st.sidebar.number_input("Derinlik (km)", min_value=1.0, max_value=100.0, value=15.0)
-
-st.sidebar.markdown("---")
-st.sidebar.subheader("📊 Son 50 km Sismik Hafıza")
-events_7d = st.sidebar.number_input("Son 7 Gün Deprem Sayısı", value=3, min_value=0)
-events_30d = st.sidebar.number_input("Son 30 Gün Deprem Sayısı", value=14, min_value=0)
-events_90d = st.sidebar.number_input("Son 90 Gün Deprem Sayısı", value=45, min_value=0)
 
 st.title("Yapay Zeka Destekli Sismik Risk Tahmin Motoru")
 st.caption("XGBoost Modeli & Fizik Tabanlı Sismik Enerji Birikim Analizi")
