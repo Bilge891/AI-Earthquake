@@ -3,16 +3,26 @@ from geopy.geocoders import Nominatim
 from geopy.distance import geodesic
 
 def adres_koordinata_cevirmeci(adres_metni):
-    geolocator = Nominatim(user_agent="turkiye_deprem_uygulamasi")
-    try:
-        location = geolocator.geocode(f"{adres_metni}, Turkey")
-        if location:
-            return location.latitude, location.longitude
-        else:
-            return None, None
-    except Exception as e:
-        print(f"Adres dönüştürme hatası: {e}")
-        return None, None
+    # IP engeline takılmamak için özel bir isim verdik
+    geolocator = Nominatim(user_agent="bilge_kagan_ai_earthquake_app") 
+    
+    # Adresi bulana kadar farklı formatlarda arama yapacak liste
+    sorgular = [
+        adres_metni, 
+        f"{adres_metni}, Türkiye",
+        f"{adres_metni}, Turkey"
+    ]
+    
+    for sorgu in sorgular:
+        try:
+            location = geolocator.geocode(sorgu, timeout=10)
+            if location:
+                return location.latitude, location.longitude
+        except Exception as e:
+            print(f"Adres aranırken zaman aşımı veya hata: {e}")
+            continue
+            
+    return None, None
 
 def sismik_hafiza_hesapla(hedef_lat, hedef_lng, csv_path="guncel_veriler.csv", yaricap_km=50):
     try:
