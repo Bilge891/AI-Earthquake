@@ -3,23 +3,50 @@ from geopy.geocoders import Nominatim
 from geopy.distance import geodesic
 
 def adres_koordinata_cevirmeci(adres_metni):
-    # IP engeline takılmamak için özel bir isim verdik
-    geolocator = Nominatim(user_agent="bilge_kagan_ai_earthquake_app") 
+    if not adres_metni or not adres_metni.strip():
+        return None, None
+        
+    metin_clean = adres_metni.lower().strip()
     
-    # Adresi bulana kadar farklı formatlarda arama yapacak liste
+    # ⚡ Hızlı Konum Hafızası (Servis engellense bile anında bulur)
+    populer_konumlar = {
+        "moda": (40.9839, 29.0270),
+        "kadıköy": (40.9901, 29.0291),
+        "kadikoy": (40.9901, 29.0291),
+        "moda, kadıköy": (40.9839, 29.0270),
+        "beşiktaş": (41.0422, 29.0067),
+        "besiktas": (41.0422, 29.0067),
+        "üsküdar": (41.0267, 29.0152),
+        "uskudar": (41.0267, 29.0152),
+        "şişli": (41.0602, 28.9877),
+        "sisli": (41.0602, 28.9877),
+        "istanbul": (41.0082, 28.9784),
+        "ankara": (39.9334, 32.8597),
+        "izmir": (38.4237, 27.1428),
+        "bursa": (40.1885, 29.0610),
+        "antalya": (36.8969, 30.7133)
+    }
+    
+    # Öncelikli olarak hızlı hafızadan kontrol et
+    for anahtar, koord in populer_konumlar.items():
+        if anahtar in metin_clean:
+            return koord[0], koord[1]
+
+    # Hafızada yoksa Nominatim üzerinden canlı ara
+    geolocator = Nominatim(user_agent="bilge_kagan_earthquake_v3")
     sorgular = [
-        adres_metni, 
+        adres_metni,
         f"{adres_metni}, Türkiye",
         f"{adres_metni}, Turkey"
     ]
     
     for sorgu in sorgular:
         try:
-            location = geolocator.geocode(sorgu, timeout=10)
+            location = geolocator.geocode(sorgu, timeout=5)
             if location:
                 return location.latitude, location.longitude
         except Exception as e:
-            print(f"Adres aranırken zaman aşımı veya hata: {e}")
+            print(f"Geocoding hatası: {e}")
             continue
             
     return None, None
