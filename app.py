@@ -2,8 +2,8 @@ import streamlit as st
 import pandas as pd
 import joblib
 import plotly.graph_objects as go
+from utils import adres_koordinata_cevirmeci
 
-# 1. Sayfa Düzeni ve Başlık
 st.set_page_config(
     page_title="Sismik Risk Analiz Paneli",
     page_icon="🌋",
@@ -11,7 +11,6 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Özel Buton Stili
 st.markdown("""
     <style>
     .stButton>button {
@@ -29,14 +28,26 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# 2. Sol Menü (Sidebar) - Girdiler
 st.sidebar.title("⚙️ Kontrol Paneli")
 st.sidebar.markdown("---")
 
-st.sidebar.subheader("📍 Konum Bilgisi")
-enlem = st.sidebar.number_input("Enlem (°N)", value=40.80, min_value=35.0, max_value=42.0, step=0.01)
-boylam = st.sidebar.number_input("Boylam (°E)", value=28.50, min_value=25.0, max_value=45.0, step=0.01)
-derinlik = st.sidebar.slider("Derinlik (km)", min_value=1.0, max_value=100.0, value=15.0)
+st.sidebar.subheader("Konum Bilgisi")
+
+adres_input = st.sidebar.text_input("Adres / İlçe Girin:", placeholder="Örn: Kadıköy, İstanbul")
+
+enlem = 40.80
+boylam = 28.50
+
+if adres_input:
+    lat_bulunan, lng_bulunan = adres_koordinata_cevirmeci(adres_input)
+    if lat_bulunan and lng_bulunan:
+        enlem = lat_bulunan
+        boylam = lng_bulunan
+        st.sidebar.success(f"Adres Bulundu!\nEnlem: {enlem:.2f}, Boylam: {boylam:.2f}")
+    else:
+        st.sidebar.error("Adres bulunamadı, varsayılan konum kullanılıyor.")
+
+derinlik = st.sidebar.number_input("Derinlik (km)", min_value=1.0, max_value=100.0, value=15.0)
 
 st.sidebar.markdown("---")
 st.sidebar.subheader("📊 Son 50 km Sismik Hafıza")
@@ -44,23 +55,21 @@ events_7d = st.sidebar.number_input("Son 7 Gün Deprem Sayısı", value=3, min_v
 events_30d = st.sidebar.number_input("Son 30 Gün Deprem Sayısı", value=14, min_value=0)
 events_90d = st.sidebar.number_input("Son 90 Gün Deprem Sayısı", value=45, min_value=0)
 
-# 3. Ana Ekran Başlığı
-st.title("🌋 Yapay Zeka Destekli Sismik Risk Tahmin Motoru")
+st.title("Yapay Zeka Destekli Sismik Risk Tahmin Motoru")
 st.caption("XGBoost Modeli & Fizik Tabanlı Sismik Enerji Birikim Analizi")
 st.divider()
 
-# 4. Ana Ekran İki Kolonlu Yapı
 col1, col2 = st.columns([1, 1.2])
 
 with col1:
-    st.subheader("🎯 Risk Tahmin Alanı")
+    st.subheader("Risk Tahmin Alanı")
     
-    if st.button("🚀 Sismik Riski Hesapla", use_container_width=True):
+    if st.button("Sismik Riski Hesapla", use_container_width=True):
         with st.spinner("Model çalıştırılıyor..."):
             try:
                 model = joblib.load('seismic_xgb_model.pkl')
                 
-                # Enerji hesabı (Joule)
+                
                 e7 = events_7d * (10 ** (1.5 * 3.0 + 4.8))
                 e30 = events_30d * (10 ** (1.5 * 3.0 + 4.8))
                 e90 = events_90d * (10 ** (1.5 * 3.0 + 4.8))
@@ -83,7 +92,7 @@ with col1:
                 st.metric(label="M ≥ 4.0 Deprem Olasılığı", value=f"%{yuzde:.1f}")
 
                 if olasilik >= 0.35:
-                    st.error("🚨 **YÜKSEK SİSMİK RİSK**: Bölgede gerilim birikimi tespit edildi.")
+                    st.error("**YÜKSEK SİSMİK RİSK**: Bölgede gerilim birikimi tespit edildi.")
                 else:
                     st.success("🟢 **DÜŞÜK SİSMİK RİSK**: Normal arka plan hareketliliği gözlemleniyor.")
                     
@@ -97,11 +106,10 @@ with col1:
 with col2:
     st.subheader("🗺️ Merkez Üssü Konum Haritası")
     
-    # Harita Verisi
     map_df = pd.DataFrame({
         'lat': [enlem],
         'lon': [boylam]
     })
 
-    # Streamlit'in yerleşik ve donmayan haritası
     st.map(map_df, zoom=7, size=200)
+
