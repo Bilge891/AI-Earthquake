@@ -32,9 +32,13 @@ st.sidebar.title("Kontrol Paneli")
 st.sidebar.markdown("---")
 
 st.sidebar.subheader("Konum Bilgisi")
+zaman_ufku = st.sidebar.selectbox(
+    "Tahmin Zaman Ufku:",
+    ["Önümüzdeki 7 Gün", "Önümüzdeki 30 Gün", "Önümüzdeki 90 Gün"]
+)
 adres_input = st.sidebar.text_input("Adres / İlçe / Mahalle Girin:", placeholder="Örn: Moda, Kadıköy")
 
-# Varsayılan değerler
+
 enlem = 40.80
 boylam = 28.50
 events_7d, events_30d, events_90d = 0, 0, 0
@@ -47,10 +51,8 @@ if adres_input:
         enlem = lat_bulunan
         boylam = lng_bulunan
         
-        # Otomatik sismik hafıza ve ortalama derinlik
         events_7d, events_30d, events_90d, derinlik = sismik_hafiza_hesapla(enlem, boylam)
         
-        # En yakın toplanma alanlarını çek
         toplanma_alanlari = toplanma_alanlari_bul(adres_input)
         
         st.sidebar.success(f"Adres Bulundu!\nEnlem: {enlem:.2f}, Boylam: {boylam:.2f}")
@@ -65,13 +67,12 @@ col1, col2 = st.columns([1, 1.2])
 
 with col1:
     st.subheader("Risk Tahmin Alanı")
-    
+
     if st.button("Sismik Riski Hesapla", use_container_width=True):
         with st.spinner("Model çalıştırılıyor..."):
             try:
                 model = joblib.load('seismic_xgb_model.pkl')
-                
-                
+
                 e7 = events_7d * (10 ** (1.5 * 3.0 + 4.8))
                 e30 = events_30d * (10 ** (1.5 * 3.0 + 4.8))
                 e90 = events_90d * (10 ** (1.5 * 3.0 + 4.8))
@@ -89,22 +90,31 @@ with col1:
                 }])
 
                 olasilik = model.predict_proba(input_df)[0][1]
-                yuzde = olasilik * 100
 
-                st.metric(label="M ≥ 4.0 Deprem Olasılığı", value=f"%{yuzde:.1f}")
+                # Zaman Ufku Ölçeklemesi (NameError Korumalı)
+                secilen_ufuk = zaman_ufku if 'zaman_ufku' in locals() or 'zaman_ufku' in globals() else "Önümüzdeki 30 Gün"
+                time_factors = {
+                    "Önümüzdeki 7 Gün": 7 / 30.0,
+                    "Önümüzdeki 30 Gün": 1.0,
+                    "Önümüzdeki 90 Gün": 90 / 30.0
+                }
+                tf = time_factors.get(secilen_ufuk, 1.0)
+                adjusted_prob = 1 - ((1 - olasilik) ** tf)
+                yuzde = adjusted_prob * 100
+
+                st.metric(label=f"M ≥ 4.0 Deprem Olasılığı ({secilen_ufuk})", value=f"%{yuzde:.1f}")
 
                 if olasilik >= 0.35:
                     st.error("**YÜKSEK SİSMİK RİSK**: Bölgede gerilim birikimi tespit edildi.")
                 else:
                     st.success("🟢 **DÜŞÜK SİSMİK RİSK**: Normal arka plan hareketliliği gözlemleniyor.")
-                    
+
                 st.info(f"**Seçili Konum:** {enlem}°N, {boylam}°E | **Derinlik:** {derinlik} km")
 
             except Exception as e:
                 st.error(f"Model yüklenirken bir hata oluştu: {e}")
     else:
         st.info("👈 Sol menüden parametreleri ayarlayıp **'Sismik Riski Hesapla'** butonuna tıklayın.")
-
 with col2:
     st.subheader("🗺️ Merkez Üssü Konum Haritası")
     
